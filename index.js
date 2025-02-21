@@ -33,6 +33,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    // ------------------------------------------DB Collection------------------------------------------
     const db = client.db("Task-Management-Application");
     const usersCollection = db.collection("users");
 
@@ -68,7 +69,6 @@ async function run() {
 
     // -----------------------------------------save user in database---------------------------------------
     app.post("/users/:email", async (req, res) => {
-      sendEmail();
       const email = req.params.email;
       const query = { email };
       const user = req.body;
