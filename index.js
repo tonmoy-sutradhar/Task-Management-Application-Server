@@ -1,10 +1,12 @@
 require("dotenv").config();
+const mongoose = require("mongoose");
 const express = require("express");
 const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 7000;
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // ----------------------------------------------------Middleware-------------------------------------------
 const corsOptions = {
@@ -17,9 +19,34 @@ app.use(cors(corsOptions));
 app.use(express.json());
 // app.use(cookieParser);
 
+// ✅ Connect to MongoDB Atlas
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.cjt8m.mongodb.net/Task-Management-Application?retryWrites=true&w=majority`,
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
+  .then(() => console.log("✅ Successfully connected to MongoDB Atlas"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+// ✅ Define Task Schema
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true, maxlength: 50 },
+  description: { type: String, maxlength: 200 },
+  category: {
+    type: String,
+    enum: ["To-Do", "In Progress", "Done"],
+    required: true,
+  },
+  timestamp: { type: Date, default: Date.now },
+});
+
+const Task = mongoose.model("Task", taskSchema);
+
 // --------------------------------------------------MongoDB Connection--------------------------------------
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.cjt8m.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -90,6 +117,47 @@ async function run() {
       const task = req.body;
       const result = await taskCollection.insertOne(task);
       res.send(result);
+    });
+
+    // ----------------------------------------Get all Task-------------------------------------------------
+    app.get("/all-task", async (req, res) => {
+      const result = await taskCollection.find().toArray();
+      res.send(result);
+    });
+
+    // ---------------------------------------Delete specific task-----------------------------------------
+    // app.delete("/delete-task/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id) };
+    //   const result = await taskCollection.deleteOne(query);
+    //   res.send(result);
+    // });
+
+    // Delete a task
+    app.delete("/task-delete/:id", async (req, res) => {
+      try {
+        await Task.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: "Task deleted successfully" });
+      } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+      }
+    });
+
+    // Update task category
+    app.put("/task-update/:id", async (req, res) => {
+      try {
+        const { category } = req.body;
+        const updatedTask = await Task.findByIdAndUpdate(
+          req.params.id,
+          { category },
+          { new: true }
+        );
+        res
+          .status(200)
+          .json({ message: "Task updated successfully", task: updatedTask });
+      } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+      }
     });
   } finally {
     // await client.close();
