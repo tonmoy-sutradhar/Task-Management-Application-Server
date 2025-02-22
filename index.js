@@ -10,7 +10,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // ----------------------------------------------------Middleware-------------------------------------------
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://task-management-applicat-1b939.web.app",
+  ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -125,23 +129,52 @@ async function run() {
       res.send(result);
     });
 
+    // ----------------------------------------Get specific Task by id -------------------------------------------------
+    app.get("/all-task/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.findOne(query);
+      res.send(result);
+    });
+
+    // -----------------------------------------Update specific task-----------------------------------------
+    app.put("/edit-task/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const update = req.body;
+      const taskUpdate = {
+        $set: {
+          title: update.title,
+          description: update.description,
+          category: update.category,
+        },
+      };
+      const result = await taskCollection.updateOne(
+        filter,
+        taskUpdate,
+        options
+      );
+      res.send(result);
+    });
+
     // ---------------------------------------Delete specific task-----------------------------------------
-    // app.delete("/delete-task/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   const result = await taskCollection.deleteOne(query);
-    //   res.send(result);
-    // });
+    app.delete("/task-delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Delete a task
-    app.delete("/task-delete/:id", async (req, res) => {
-      try {
-        await Task.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: "Task deleted successfully" });
-      } catch (error) {
-        res.status(500).json({ message: "Server error", error });
-      }
-    });
+    // app.delete("/task-delete/:id", async (req, res) => {
+    //   try {
+    //     await Task.findByIdAndDelete(req.params.id);
+    //     res.status(200).json({ message: "Task deleted successfully" });
+    //   } catch (error) {
+    //     res.status(500).json({ message: "Server error", error });
+    //   }
+    // });
 
     // Update task category
     app.put("/task-update/:id", async (req, res) => {
