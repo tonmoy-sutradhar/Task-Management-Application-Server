@@ -33,7 +33,9 @@ mongoose
     }
   )
   .then(() => console.log("✅ Successfully connected to MongoDB Atlas"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .catch((err) =>
+    console.error("❌ MongoDB Connection Error on port 7000:", err)
+  );
 
 // ✅ Define Task Schema
 const taskSchema = new mongoose.Schema({
